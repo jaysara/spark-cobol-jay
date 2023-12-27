@@ -47,7 +47,7 @@ public class App
                 .format("za.co.absa.cobrix.spark.cobol.source")
                 .option("copybook_contents", copybook)
                 .option("schema_retention_policy", "collapse_root")
-                .load("/Users/jay/Downloads/file1.bin");
+                .load("data/file1.bin");
 
         df1.printSchema();
 
