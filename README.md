@@ -12,3 +12,5 @@ I ran in to some version mismatch issues while running this project in my IDE an
 * 
 `spark-submit --class com.test.cobol.App --jars ~/Downloads/spark-cobol_2.12-2.6.5-bundle.jar --master local target/spark-cobol-jay-1.0-SNAPSHOT.jar
 `
+### Processing Variable Length ASCII file without LF/CR
+* The file `FixedWidthApp.java` demonstrate how you can process a variable length ascii file that has length of the record identified in the beginning of the file. The sample file is located at `data/variable-length-file.txt`
