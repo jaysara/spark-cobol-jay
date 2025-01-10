@@ -1,0 +1,81 @@
+       01 RECORD.
+           05 CONSUMER-ID                    PIC 9(9) COMP-9.
+           05 SEQUENCE-NUMBER                PIC 9(4) COMP-9.
+           05 CUSTOM-TRIGGERS-NEW-CURRENT-ADDRESS-CTGR06-ADDEFFDT
+                                             PIC 9(9) COMP-9.
+           05 CUSTOM-TRIGGERS-NEW-EMPLOYMENT-VERIFIED-CTGR06-EMPEFFDT
+                                             PIC 9(9) COMP-9.
+           05 CUSTOM-TRIGGERS-NEW-INQUIRY-REPORTED-OE-CTGR06-INQEFFDT
+                                             PIC 9(9) COMP-9.
+           05 CUSTOM-TRIGGERS-NEW-TRADE-REPORTED-CTGR06-TRDEFFDT
+                                             PIC 9(9) COMP-9.
+           05 CUSTOM-TRIGGERS-NEW-NAME-REPORTED-PERSON-MARKET-FULL-NAME
+                                             PIC X(70).
+           05 CUSTOM-TRIGGERS-NEW-COLLECTION-VERIFIED-CTGR06-COLEFFDT
+                                             PIC 9(9) COMP-9.
+           05 CUSTOM-TRIGGERS-CHANGE-NUM-PUBREC-CTGR06-PUBCOUNT
+                                             PIC 9(9) COMP-9.
+           05 CUSTOM-TRIGGERS-CHANGE-PAID-PUBREC-CTGR06-PUBPDDT
+                                             PIC 9(9) COMP-9.
+           05 CUSTOM-TRIGGERS-NEW-PUBREC-REPORTED-CTGR06-PUBRPDT
+                                             PIC 9(9) COMP-9.
+           05 CUSTOM-TRIGGERS-OLD-INQUIRY-REPORTED-CTGR06-INQOLDDT
+                                             PIC 9(9) COMP-9.
+           05 CUSTOM-TRIGGERS-VANTAGE3-SCORE-CHANGE-CVTG03-FINSCORE
+                                             PIC S9(9) COMP-9.
+           05 CUSTOM-TRIGGERS-UPDATECODETRIGGER-FLAG
+                                             PIC X.
+           05 CUSTOM-TRIGGERS-UPDATECODETRIGGER-POST-REASON-CODE
+                                             PIC X.
+           05 CUSTOM-TRIGGERS-CSTTRIGGERLEVEL-FLAG
+                                             PIC X.
+           05 CUSTOM-TRIGGERS-CSTTRIGGERLEVEL-POST-REASON-CODE
+                                             PIC X.
+           05 CUSTOM-TRIGGERS-NEW-CURRENT-ADDRESS-FLAG
+                                             PIC X.
+           05 CUSTOM-TRIGGERS-NEW-CURRENT-ADDRESS-POST-REASON-CODE
+                                             PIC X.
+           05 CUSTOM-TRIGGERS-NEW-EMPLOYMENT-VERIFIED-FLAG
+                                             PIC X.
+           05 CUSTOM-TRIGGERS-NEW-EMPLOYMENT-VERIFIED-POST-REASON-CODE
+                                             PIC X.
+           05 CUSTOM-TRIGGERS-NEW-INQUIRY-REPORTED-OE-FLAG
+                                             PIC X.
+           05 CUSTOM-TRIGGERS-NEW-INQUIRY-REPORTED-OE-POST-REASON-CODE
+                                             PIC X.
+           05 CUSTOM-TRIGGERS-NEW-TRADE-REPORTED-FLAG
+                                             PIC X.
+           05 CUSTOM-TRIGGERS-NEW-TRADE-REPORTED-POST-REASON-CODE
+                                             PIC X.
+           05 CUSTOM-TRIGGERS-NEW-NAME-REPORTED-FLAG
+                                             PIC X.
+           05 CUSTOM-TRIGGERS-NEW-NAME-REPORTED-POST-REASON-CODE
+                                             PIC X.
+           05 CUSTOM-TRIGGERS-NEW-COLLECTION-VERIFIED-FLAG
+                                             PIC X.
+           05 CUSTOM-TRIGGERS-NEW-COLLECTION-VERIFIED-POST-REASON-CODE
+                                             PIC X.
+           05 CUSTOM-TRIGGERS-CHANGE-NUM-PUBREC-FLAG
+                                             PIC X.
+           05 CUSTOM-TRIGGERS-CHANGE-NUM-PUBREC-POST-REASON-CODE
+                                             PIC X.
+           05 CUSTOM-TRIGGERS-CHANGE-PAID-PUBREC-FLAG
+                                             PIC X.
+           05 CUSTOM-TRIGGERS-CHANGE-PAID-PUBREC-POST-REASON-CODE
+                                             PIC X.
+           05 CUSTOM-TRIGGERS-NEW-PUBREC-REPORTED-FLAG
+                                             PIC X.
+           05 CUSTOM-TRIGGERS-NEW-PUBREC-REPORTED-POST-REASON-CODE
+                                             PIC X.
+           05 CUSTOM-TRIGGERS-OLD-INQUIRY-REPORTED-FLAG
+                                             PIC X.
+           05 CUSTOM-TRIGGERS-OLD-INQUIRY-REPORTED-POST-REASON-CODE
+                                             PIC X.
+           05 CUSTOM-TRIGGERS-VANTAGE3-SCORE-CHANGE-FLAG
+                                             PIC X.
+           05 CUSTOM-TRIGGERS-VANTAGE3-SCORE-CHANGE-POST-REASON-CODE
+                                             PIC X.
+           05 CUSTOM-TRIGGERS-CSTCHKUPDLEVEL-FLAG
+                                             PIC X.
+           05 CUSTOM-TRIGGERS-CSTCHKUPDLEVEL-POST-REASON-CODE
+                                             PIC X.
