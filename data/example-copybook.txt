@@ -1,81 +1,42 @@
        01 RECORD.
-           05 CONSUMER-ID                    PIC 9(9) COMP-9.
-           05 SEQUENCE-NUMBER                PIC 9(4) COMP-9.
-           05 CUSTOM-TRIGGERS-NEW-CURRENT-ADDRESS-CTGR06-ADDEFFDT
-                                             PIC 9(9) COMP-9.
-           05 CUSTOM-TRIGGERS-NEW-EMPLOYMENT-VERIFIED-CTGR06-EMPEFFDT
-                                             PIC 9(9) COMP-9.
-           05 CUSTOM-TRIGGERS-NEW-INQUIRY-REPORTED-OE-CTGR06-INQEFFDT
-                                             PIC 9(9) COMP-9.
-           05 CUSTOM-TRIGGERS-NEW-TRADE-REPORTED-CTGR06-TRDEFFDT
-                                             PIC 9(9) COMP-9.
-           05 CUSTOM-TRIGGERS-NEW-NAME-REPORTED-PERSON-MARKET-FULL-NAME
-                                             PIC X(70).
-           05 CUSTOM-TRIGGERS-NEW-COLLECTION-VERIFIED-CTGR06-COLEFFDT
-                                             PIC 9(9) COMP-9.
-           05 CUSTOM-TRIGGERS-CHANGE-NUM-PUBREC-CTGR06-PUBCOUNT
-                                             PIC 9(9) COMP-9.
-           05 CUSTOM-TRIGGERS-CHANGE-PAID-PUBREC-CTGR06-PUBPDDT
-                                             PIC 9(9) COMP-9.
-           05 CUSTOM-TRIGGERS-NEW-PUBREC-REPORTED-CTGR06-PUBRPDT
-                                             PIC 9(9) COMP-9.
-           05 CUSTOM-TRIGGERS-OLD-INQUIRY-REPORTED-CTGR06-INQOLDDT
-                                             PIC 9(9) COMP-9.
-           05 CUSTOM-TRIGGERS-VANTAGE3-SCORE-CHANGE-CVTG03-FINSCORE
-                                             PIC S9(9) COMP-9.
-           05 CUSTOM-TRIGGERS-UPDATECODETRIGGER-FLAG
-                                             PIC X.
-           05 CUSTOM-TRIGGERS-UPDATECODETRIGGER-POST-REASON-CODE
-                                             PIC X.
-           05 CUSTOM-TRIGGERS-CSTTRIGGERLEVEL-FLAG
-                                             PIC X.
-           05 CUSTOM-TRIGGERS-CSTTRIGGERLEVEL-POST-REASON-CODE
-                                             PIC X.
-           05 CUSTOM-TRIGGERS-NEW-CURRENT-ADDRESS-FLAG
-                                             PIC X.
-           05 CUSTOM-TRIGGERS-NEW-CURRENT-ADDRESS-POST-REASON-CODE
-                                             PIC X.
-           05 CUSTOM-TRIGGERS-NEW-EMPLOYMENT-VERIFIED-FLAG
-                                             PIC X.
-           05 CUSTOM-TRIGGERS-NEW-EMPLOYMENT-VERIFIED-POST-REASON-CODE
-                                             PIC X.
-           05 CUSTOM-TRIGGERS-NEW-INQUIRY-REPORTED-OE-FLAG
-                                             PIC X.
-           05 CUSTOM-TRIGGERS-NEW-INQUIRY-REPORTED-OE-POST-REASON-CODE
-                                             PIC X.
-           05 CUSTOM-TRIGGERS-NEW-TRADE-REPORTED-FLAG
-                                             PIC X.
-           05 CUSTOM-TRIGGERS-NEW-TRADE-REPORTED-POST-REASON-CODE
-                                             PIC X.
-           05 CUSTOM-TRIGGERS-NEW-NAME-REPORTED-FLAG
-                                             PIC X.
-           05 CUSTOM-TRIGGERS-NEW-NAME-REPORTED-POST-REASON-CODE
-                                             PIC X.
-           05 CUSTOM-TRIGGERS-NEW-COLLECTION-VERIFIED-FLAG
-                                             PIC X.
-           05 CUSTOM-TRIGGERS-NEW-COLLECTION-VERIFIED-POST-REASON-CODE
-                                             PIC X.
-           05 CUSTOM-TRIGGERS-CHANGE-NUM-PUBREC-FLAG
-                                             PIC X.
-           05 CUSTOM-TRIGGERS-CHANGE-NUM-PUBREC-POST-REASON-CODE
-                                             PIC X.
-           05 CUSTOM-TRIGGERS-CHANGE-PAID-PUBREC-FLAG
-                                             PIC X.
-           05 CUSTOM-TRIGGERS-CHANGE-PAID-PUBREC-POST-REASON-CODE
-                                             PIC X.
-           05 CUSTOM-TRIGGERS-NEW-PUBREC-REPORTED-FLAG
-                                             PIC X.
-           05 CUSTOM-TRIGGERS-NEW-PUBREC-REPORTED-POST-REASON-CODE
-                                             PIC X.
-           05 CUSTOM-TRIGGERS-OLD-INQUIRY-REPORTED-FLAG
-                                             PIC X.
-           05 CUSTOM-TRIGGERS-OLD-INQUIRY-REPORTED-POST-REASON-CODE
-                                             PIC X.
-           05 CUSTOM-TRIGGERS-VANTAGE3-SCORE-CHANGE-FLAG
-                                             PIC X.
-           05 CUSTOM-TRIGGERS-VANTAGE3-SCORE-CHANGE-POST-REASON-CODE
-                                             PIC X.
-           05 CUSTOM-TRIGGERS-CSTCHKUPDLEVEL-FLAG
-                                             PIC X.
-           05 CUSTOM-TRIGGERS-CSTCHKUPDLEVEL-POST-REASON-CODE
-                                             PIC X.
+           05 FIELD-1                        PIC 9(9) COMP-9.
+           05 FIELD-2                        PIC 9(4) COMP-9.
+           05 FIELD-3-DT                     PIC 9(9) COMP-9.
+           05 FIELD-4-DT                     PIC 9(9) COMP-9.
+           05 FIELD-5-DT                     PIC 9(9) COMP-9.
+           05 FIELD-6-DT                     PIC 9(9) COMP-9.
+           05 FIELD-7                        PIC X(70).
+           05 FIELD-8-DT                     PIC 9(9) COMP-9.
+           05 FIELD-9                        PIC 9(9) COMP-9.
+           05 FIELD-10-DT                    PIC 9(9) COMP-9.
+           05 FIELD-11-DT                    PIC 9(9) COMP-9.
+           05 FIELD-12-DT                    PIC 9(9) COMP-9.
+           05 FIELD-14                        PIC S9(9) COMP-9.
+           05 FIELD-15                        PIC X.
+           05 FIELD-16                        PIC X.
+           05 FIELD-17                        PIC X.
+           05 FIELD-18                        PIC X.
+           05 FIELD-19                        PIC X.
+           05 FIELD-20                        PIC X.
+           05 FIELD-21                        PIC X.
+           05 FIELD-22                        PIC X.
+           05 FIELD-23                        PIC X.
+           05 FIELD-24                        PIC X.
+           05 FIELD-25                        PIC X.
+           05 FIELD-26                        PIC X.
+           05 FIELD-27                        PIC X.
+           05 FIELD-28                        PIC X.
+           05 FIELD-29                        PIC X.
+           05 FIELD-30                        PIC X.
+           05 FIELD-31                        PIC X.
+           05 FIELD-32                        PIC X.
+           05 FIELD-33                        PIC X.
+           05 FIELD-34                        PIC X.
+           05 FIELD-35                        PIC X.
+           05 FIELD-36                        PIC X.
+           05 FIELD-37                        PIC X.
+           05 FIELD-38                        PIC X.
+           05 FIELD-39                        PIC X.
+           05 FIELD-40                        PIC X.
+           05 FIELD-41                        PIC X.
+           05 FIELD-42                        PIC X.
