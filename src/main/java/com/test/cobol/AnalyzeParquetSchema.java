@@ -150,8 +150,14 @@ public class ParquetSchemaAnalyzer {
 
                         // Check dictionary encoding
                         if (!column.getEncodings().contains(Encoding.PLAIN_DICTIONARY)) {
+
+                            StructField field = findColumnInSchema(df.schema(), columnName);
+                            if (field != null) {
+                                    DataType dataType = field.dataType();
                             // Get the column's data type
-                            DataType dataType = df.schema().apply(columnName).dataType();
+                            //DataType dataType = df.schema().apply(columnName).dataType();
+                                // Calculate cardinality based on data type
+                                long cardinality;
 
                             if (dataType instanceof ArrayType) {
                                 // Flatten the array column and calculate cardinality
@@ -182,6 +188,25 @@ public class ParquetSchemaAnalyzer {
         System.out.println("\n=== End of Row Group and Column Chunk Analysis ===");
     }
 
+    // Helper method to find a column in the schema (handles nested columns)
+private static StructField findColumnInSchema(StructType schema, String columnName) {
+    // Split the column name by dots to handle nested columns
+    String[] parts = columnName.split("\\.");
+    StructField field = null;
+    StructType currentSchema = schema;
+
+    for (String part : parts) {
+        field = currentSchema.fields().find(f -> f.name().equals(part)).orElse(null);
+        if (field == null) {
+            return null; // Column not found
+        }
+        if (field.dataType() instanceof StructType) {
+            currentSchema = (StructType) field.dataType(); // Traverse nested schema
+        }
+    }
+
+    return field;
+}
     private static void analyzePredicatePushdown(String parquetDirPath) throws IOException {
         System.out.println("\n=== Predicate Pushdown Optimization Analysis ===");
 
