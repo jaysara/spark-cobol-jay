@@ -11,13 +11,15 @@ import org.apache.parquet.schema.MessageType;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
+import org.apache.spark.sql.functions;
+import org.apache.spark.sql.types.DataType;
+import org.apache.spark.sql.types.ArrayType;
+import org.apache.spark.sql.types.MapType;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
 
 import java.io.IOException;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 public class ParquetSchemaAnalyzer {
 
@@ -148,8 +150,25 @@ public class ParquetSchemaAnalyzer {
 
                         // Check dictionary encoding
                         if (!column.getEncodings().contains(Encoding.PLAIN_DICTIONARY)) {
-                            // Calculate cardinality for the column
-                            long cardinality = df.select(columnName).distinct().count();
+                            // Get the column's data type
+                            DataType dataType = df.schema().apply(columnName).dataType();
+
+                            // Calculate cardinality based on data type
+                            long cardinality;
+                            if (dataType instanceof ArrayType) {
+                                // Flatten the array column and calculate cardinality
+                                cardinality = df.select(functions.explode(functions.col(columnName)).distinct().count();
+                            } else if (dataType instanceof MapType) {
+                                // Flatten the map column (keys and values) and calculate cardinality
+                                cardinality = df.select(
+                                        functions.explode(functions.map_keys(functions.col(columnName))
+                                ).distinct().count();
+                            } else {
+                                // Calculate cardinality for non-complex types
+                                cardinality = df.select(columnName).distinct().count();
+                            }
+
+                            // Display warning if cardinality is low
                             if (cardinality < LOW_CARDINALITY_THRESHOLD) {
                                 System.out.println("      ⚠️ Warning: Dictionary encoding is not used, but cardinality is low (" + cardinality + "). Consider enabling dictionary encoding for better performance.");
                             }
