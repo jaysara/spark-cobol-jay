@@ -106,4 +106,65 @@ public class ParquetSchemaAnalyzer {
             long totalSize = block.getTotalByteSize();
             System.out.println("\nRow Group " + i + ":");
             System.out.println("  - Row Count: " + rowCount);
-            System.out.println("  - Total Size: " + total
+            System.out.println("  - Total Size: " + totalSize + " bytes");
+
+            // Check if row group size is optimal (128 MB to 1 GB is recommended)
+            if (totalSize >= 128 * 1024 * 1024 && totalSize <= 1024 * 1024 * 1024) {
+                System.out.println("  ✅ Good: Row group size is within the recommended range (128 MB to 1 GB).");
+            } else {
+                System.out.println("  ❌ Bad: Row group size is outside the recommended range. Consider adjusting row group size.");
+            }
+
+            // Analyze column chunks
+            System.out.println("  Column Chunks:");
+            for (ColumnChunkMetaData column : block.getColumns()) {
+                String columnName = column.getPath().toDotString();
+                long columnSize = column.getTotalSize();
+                System.out.println("    - Column: " + columnName);
+                System.out.println("      Size: " + columnSize + " bytes");
+
+                // Check if column chunk size is reasonable
+                if (columnSize > 0) {
+                    System.out.println("      ✅ Good: Column chunk has data.");
+                } else {
+                    System.out.println("      ❌ Bad: Column chunk is empty or too small.");
+                }
+            }
+        }
+
+        System.out.println("\n=== End of Row Group and Column Chunk Analysis ===");
+    }
+
+    private static void analyzePredicatePushdown(String parquetFilePath) throws IOException {
+        System.out.println("\n=== Predicate Pushdown Optimization Analysis ===");
+
+        // Read Parquet metadata
+        Configuration conf = new Configuration();
+        Path path = new Path(parquetFilePath);
+        ParquetMetadata metadata = ParquetFileReader.readFooter(conf, path);
+        List<BlockMetaData> blocks = metadata.getBlocks();
+
+        // Analyze predicate pushdown support
+        for (int i = 0; i < blocks.size(); i++) {
+            BlockMetaData block = blocks.get(i);
+            System.out.println("\nRow Group " + i + ":");
+
+            for (ColumnChunkMetaData column : block.getColumns()) {
+                String columnName = column.getPath().toDotString();
+                System.out.println("  Column: " + columnName);
+
+                // Check if statistics are available for predicate pushdown
+                if (column.getStatistics() != null) {
+                    System.out.println("    ✅ Good: Statistics available for predicate pushdown.");
+                    System.out.println("      Min: " + column.getStatistics().genericGetMin());
+                    System.out.println("      Max: " + column.getStatistics().genericGetMax());
+                    System.out.println("      Null Count: " + column.getStatistics().getNumNulls());
+                } else {
+                    System.out.println("    ❌ Bad: No statistics available. Predicate pushdown will not be optimized for this column.");
+                }
+            }
+        }
+
+        System.out.println("\n=== End of Predicate Pushdown Analysis ===");
+    }
+}
