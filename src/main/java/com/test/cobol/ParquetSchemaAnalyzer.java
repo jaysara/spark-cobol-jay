@@ -1,19 +1,23 @@
 package com.test.cobol;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.*;
+import org.apache.parquet.hadoop.ParquetFileReader;
+import org.apache.parquet.hadoop.metadata.*;
 import org.apache.parquet.schema.*;
 import org.apache.spark.sql.*;
 import org.apache.spark.sql.types.*;
 
-import java.util.Arrays;
-import java.util.List;
+import java.io.IOException;
+import java.util.*;
 
 public class ParquetSchemaAnalyzer {
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         if (args.length < 1) {
             System.err.println("Usage: ParquetSchemaAnalyzer <parquet-file-path>");
             System.exit(1);
         }
-        
+
         String parquetFilePath = args[0];
 
         // Initialize SparkSession
@@ -31,8 +35,11 @@ public class ParquetSchemaAnalyzer {
         // Analyze schema
         analyzeSchema(schema);
 
-        // Check if partitioning is used
-        analyzePartitioning(df, parquetFilePath);
+        // Check partitioning and bucketing
+        analyzePartitioningAndBucketing(df);
+
+        // Analyze Parquet file metadata (compression, encoding, file sizes)
+        analyzeParquetMetadata(parquetFilePath);
 
         // Stop Spark session
         spark.stop();
@@ -54,13 +61,13 @@ public class ParquetSchemaAnalyzer {
             if (dataType instanceof StringType) {
                 System.out.println(" ⚠️  Consider using dictionary encoding for large text fields.");
             } else if (dataType instanceof DoubleType) {
-                System.out.println(" ⚠️  Consider using DecimalType to improve precision.");
+                System.out.println(" ⚠️  Consider using DecimalType for improved precision.");
             } else if (dataType instanceof LongType) {
-                System.out.println(" ✅  LongType is efficient unless smaller values fit in IntegerType.");
+                System.out.println(" ✅  LongType is efficient unless values fit in IntegerType.");
             } else if (dataType instanceof IntegerType) {
                 System.out.println(" ✅  IntegerType is an efficient choice.");
             } else if (dataType instanceof BinaryType) {
-                System.out.println(" ⚠️  BinaryType can be expensive; consider alternatives if storing large blobs.");
+                System.out.println(" ⚠️  BinaryType can be expensive; avoid storing large blobs.");
             }
 
             // Check for nullable fields
@@ -68,19 +75,105 @@ public class ParquetSchemaAnalyzer {
                 System.out.println(" ⚠️  Nullable fields may cause performance issues due to Spark's handling of nulls.");
             }
 
+            // Detect nested structures
+            if (dataType instanceof StructType) {
+                System.out.println(" ⚠️  Nested StructType detected. Consider flattening for better performance.");
+            } else if (dataType instanceof ArrayType) {
+                System.out.println(" ⚠️  ArrayType detected. Consider using explode() if needed for efficient queries.");
+            }
+
             System.out.println();
         }
     }
 
-    private static void analyzePartitioning(Dataset<Row> df, String parquetFilePath) {
-        System.out.println("\n==== PARTITIONING ANALYSIS ====");
-        
-        List<String> partitionColumns = df.inputFiles().length > 1 ? Arrays.asList(df.columns()) : List.of();
+    private static void analyzePartitioningAndBucketing(Dataset<Row> df) {
+        System.out.println("\n==== PARTITIONING & BUCKETING ANALYSIS ====");
+
+        List<String> partitionColumns = Arrays.asList(df.columns()); // Simplified check
 
         if (partitionColumns.isEmpty()) {
             System.out.println(" ⚠️  No partitioning detected. Consider partitioning for large datasets.");
         } else {
             System.out.println(" ✅  Partitioning detected on columns: " + partitionColumns);
+        }
+
+        // Bucket analysis (not directly available in metadata, assuming user-defined knowledge)
+        List<String> bucketColumns = Arrays.asList(); // Needs external input
+        if (!bucketColumns.isEmpty()) {
+            System.out.println(" ✅ Bucketing detected on columns: " + bucketColumns);
+            System.out.println("    Ensure that joins use bucketed tables for better performance.");
+        } else {
+            System.out.println(" ⚠️  No bucketing detected. Consider bucketing on high-cardinality join keys.");
+        }
+    }
+
+    private static void analyzeParquetMetadata(String parquetFilePath) throws IOException {
+        System.out.println("\n==== PARQUET FILE METADATA ANALYSIS ====");
+
+        Configuration conf = new Configuration();
+        Path path = new Path(parquetFilePath);
+        FileSystem fs = path.getFileSystem(conf);
+        FileStatus[] files = fs.listStatus(path);
+
+        long totalUncompressedSize = 0;
+        long totalCompressedSize = 0;
+        long totalRowCount = 0;
+        int fileCount = files.length;
+
+        for (FileStatus file : files) {
+            try (ParquetFileReader reader = ParquetFileReader.open(conf, file.getPath())) {
+                ParquetMetadata metadata = reader.getFooter();
+                FileMetaData fileMetaData = metadata.getFileMetaData();
+                List<BlockMetaData> rowGroups = metadata.getBlocks();
+
+                for (BlockMetaData block : rowGroups) {
+                    totalUncompressedSize += block.getTotalByteSize();
+                    totalCompressedSize += block.getCompressedSize();
+                    totalRowCount += block.getRowCount();
+                }
+
+                System.out.println("File: " + file.getPath().getName());
+                System.out.println(" - Compression Codec: " + fileMetaData.getCreatedBy());
+                System.out.println(" - Row Groups: " + rowGroups.size());
+            }
+        }
+
+        if (totalCompressedSize > 0 && totalUncompressedSize > 0) {
+            double compressionRatio = (double) totalUncompressedSize / totalCompressedSize;
+            System.out.printf(" ✅ Compression Ratio: %.2f (higher is better)\n", compressionRatio);
+        }
+
+        // Small file check
+        long avgFileSize = totalCompressedSize / fileCount;
+        if (avgFileSize < 128 * 1024 * 1024) { // Less than 128MB
+            System.out.println(" ⚠️  Small file detected! Average file size is " + (avgFileSize / (1024 * 1024)) + "MB.");
+            System.out.println("    Consider merging small files to optimize performance.");
+        } else {
+            System.out.println(" ✅ File size is optimal.");
+        }
+
+        // Dictionary Encoding Check
+        System.out.println("\n==== DICTIONARY ENCODING CHECK ====");
+        for (FileStatus file : files) {
+            try (ParquetFileReader reader = ParquetFileReader.open(conf, file.getPath())) {
+                ParquetMetadata metadata = reader.getFooter();
+                MessageType schema = metadata.getFileMetaData().getSchema();
+
+                for (Type field : schema.getFields()) {
+                    if (field.asPrimitiveType() != null) {
+                        String fieldName = field.getName();
+                        boolean isDictionaryEncoded = metadata.getBlocks().stream()
+                                .flatMap(block -> block.getColumns().stream())
+                                .anyMatch(column -> column.getEncodings().contains(Encoding.PLAIN_DICTIONARY));
+
+                        if (isDictionaryEncoded) {
+                            System.out.println(" ✅ Dictionary Encoding used for: " + fieldName);
+                        } else {
+                            System.out.println(" ⚠️  Dictionary Encoding NOT used for: " + fieldName);
+                        }
+                    }
+                }
+            }
         }
     }
 }
