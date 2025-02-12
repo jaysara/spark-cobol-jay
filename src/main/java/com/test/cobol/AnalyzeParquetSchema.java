@@ -1,13 +1,23 @@
 package com.test.cobol;
-  import org.apache.spark.sql.Dataset;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
+import org.apache.parquet.hadoop.ParquetFileReader;
+import org.apache.parquet.hadoop.metadata.BlockMetaData;
+import org.apache.parquet.hadoop.metadata.ColumnChunkMetaData;
+import org.apache.parquet.hadoop.metadata.ParquetMetadata;
+import org.apache.parquet.schema.MessageType;
+import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
 
-public class AnalyzeParquetSchema {
+import java.io.IOException;
+import java.util.List;
 
-    public static void main(String[] args) {
+public class ParquetSchemaAnalyzer {
+
+    public static void main(String[] args) throws IOException {
         // Initialize SparkSession
         SparkSession spark = SparkSession.builder()
                 .appName("Parquet Schema Analyzer")
@@ -22,6 +32,12 @@ public class AnalyzeParquetSchema {
 
         // Analyze the schema
         analyzeSchema(df.schema());
+
+        // Analyze row group and column chunk sizes
+        analyzeRowGroupsAndColumnChunks(parquetFilePath);
+
+        // Analyze predicate pushdown optimization
+        analyzePredicatePushdown(parquetFilePath);
 
         // Stop SparkSession
         spark.stop();
@@ -58,7 +74,7 @@ public class AnalyzeParquetSchema {
             }
         }
 
-        System.out.println("\n=== End of Report ===");
+        System.out.println("\n=== End of Schema Report ===");
     }
 
     private static boolean isEfficientDataType(String dataType) {
@@ -71,4 +87,23 @@ public class AnalyzeParquetSchema {
         }
         return false;
     }
-}
+
+    private static void analyzeRowGroupsAndColumnChunks(String parquetFilePath) throws IOException {
+        System.out.println("\n=== Row Group and Column Chunk Analysis ===");
+
+        // Read Parquet metadata
+        Configuration conf = new Configuration();
+        Path path = new Path(parquetFilePath);
+        ParquetMetadata metadata = ParquetFileReader.readFooter(conf, path);
+        List<BlockMetaData> blocks = metadata.getBlocks();
+        MessageType schema = metadata.getFileMetaData().getSchema();
+
+        // Analyze row groups
+        System.out.println("\nNumber of Row Groups: " + blocks.size());
+        for (int i = 0; i < blocks.size(); i++) {
+            BlockMetaData block = blocks.get(i);
+            long rowCount = block.getRowCount();
+            long totalSize = block.getTotalByteSize();
+            System.out.println("\nRow Group " + i + ":");
+            System.out.println("  - Row Count: " + rowCount);
+            System.out.println("  - Total Size: " + total
