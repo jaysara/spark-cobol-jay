@@ -153,20 +153,21 @@ public class ParquetSchemaAnalyzer {
                             // Get the column's data type
                             DataType dataType = df.schema().apply(columnName).dataType();
 
-                            // Calculate cardinality based on data type
-                            long cardinality;
                             if (dataType instanceof ArrayType) {
                                 // Flatten the array column and calculate cardinality
-                                cardinality = df.select(functions.explode(functions.col(columnName)).distinct().count();
+                                cardinality = df.select(functions.explode(functions.col(columnName)).as("flattened"))
+                                               .distinct()
+                                               .count();
                             } else if (dataType instanceof MapType) {
                                 // Flatten the map column (keys and values) and calculate cardinality
-                                cardinality = df.select(
-                                        functions.explode(functions.map_keys(functions.col(columnName))
-                                ).distinct().count();
+                                cardinality = df.select(functions.explode(functions.map_keys(functions.col(columnName))).as("flattened"))
+                                               .distinct()
+                                               .count();
                             } else {
                                 // Calculate cardinality for non-complex types
                                 cardinality = df.select(columnName).distinct().count();
                             }
+                            
 
                             // Display warning if cardinality is low
                             if (cardinality < LOW_CARDINALITY_THRESHOLD) {
