@@ -18,6 +18,8 @@ import org.apache.spark.sql.types.MapType;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.List;
 
@@ -25,6 +27,9 @@ public class ParquetSchemaAnalyzer {
 
     // Threshold for low cardinality (adjust as needed)
     private static final long LOW_CARDINALITY_THRESHOLD = 10000;
+
+    // File path for the report
+    private static final String REPORT_FILE_PATH = "parquet_analysis_report.txt";
 
     public static void main(String[] args) throws IOException {
         // Initialize SparkSession
@@ -39,51 +44,54 @@ public class ParquetSchemaAnalyzer {
         // Read all Parquet files in the directory
         Dataset<Row> df = spark.read().parquet(parquetDirPath);
 
-        // Analyze the schema
-        analyzeSchema(df.schema());
+        // Open a file writer for the report
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(REPORT_FILE_PATH))) {
+            // Analyze the schema
+            analyzeSchema(df.schema(), writer);
 
-        // Analyze row group and column chunk sizes for all files in the directory
-        analyzeRowGroupsAndColumnChunks(parquetDirPath, df);
+            // Analyze row group and column chunk sizes for all files in the directory
+            analyzeRowGroupsAndColumnChunks(parquetDirPath, df, writer);
 
-        // Analyze predicate pushdown optimization for all files in the directory
-        analyzePredicatePushdown(parquetDirPath);
+            // Analyze predicate pushdown optimization for all files in the directory
+            analyzePredicatePushdown(parquetDirPath, writer);
+        }
 
         // Stop SparkSession
         spark.stop();
     }
 
-    private static void analyzeSchema(StructType schema) {
-        System.out.println("=== Schema Analysis Report ===");
+    private static void analyzeSchema(StructType schema, BufferedWriter writer) throws IOException {
+        writer.write("=== Schema Analysis Report ===\n");
 
         for (StructField field : schema.fields()) {
-            System.out.println("\nColumn: " + field.name());
-            System.out.println("Data Type: " + field.dataType());
+            writer.write("\nColumn: " + field.name() + "\n");
+            writer.write("Data Type: " + field.dataType() + "\n");
 
             // Check for good practices
             if (isEfficientDataType(field.dataType().toString())) {
-                System.out.println("✅ Good: Efficient data type used.");
+                writer.write("✅ Good: Efficient data type used.\n");
             } else {
-                System.out.println("❌ Bad: Inefficient data type. Consider using a smaller data type.");
+                writer.write("❌ Bad: Inefficient data type. Consider using a smaller data type.\n");
             }
 
             // Check if the column is nullable
             if (field.nullable()) {
-                System.out.println("⚠️ Warning: Column is nullable. Nullable columns can increase storage size.");
+                writer.write("⚠️ Warning: Column is nullable. Nullable columns can increase storage size.\n");
             } else {
-                System.out.println("✅ Good: Column is not nullable.");
+                writer.write("✅ Good: Column is not nullable.\n");
             }
 
             // Check for nested structures
             if (field.dataType().toString().contains("StructType") ||
                 field.dataType().toString().contains("ArrayType") ||
                 field.dataType().toString().contains("MapType")) {
-                System.out.println("⚠️ Warning: Complex data type detected. Complex types can impact performance.");
+                writer.write("⚠️ Warning: Complex data type detected. Complex types can impact performance.\n");
             } else {
-                System.out.println("✅ Good: No complex data type.");
+                writer.write("✅ Good: No complex data type.\n");
             }
         }
 
-        System.out.println("\n=== End of Schema Report ===");
+        writer.write("\n=== End of Schema Report ===\n");
     }
 
     private static boolean isEfficientDataType(String dataType) {
@@ -97,8 +105,8 @@ public class ParquetSchemaAnalyzer {
         return false;
     }
 
-    private static void analyzeRowGroupsAndColumnChunks(String parquetDirPath, Dataset<Row> df) throws IOException {
-        System.out.println("\n=== Row Group and Column Chunk Analysis ===");
+    private static void analyzeRowGroupsAndColumnChunks(String parquetDirPath, Dataset<Row> df, BufferedWriter writer) throws IOException {
+        writer.write("\n=== Row Group and Column Chunk Analysis ===\n");
 
         // Get all Parquet files in the directory
         Configuration conf = new Configuration();
@@ -109,7 +117,7 @@ public class ParquetSchemaAnalyzer {
         // Iterate through each Parquet file
         for (FileStatus fileStatus : fileStatuses) {
             Path filePath = fileStatus.getPath();
-            System.out.println("\nAnalyzing file: " + filePath);
+            writer.write("\nAnalyzing file: " + filePath + "\n");
 
             try (ParquetFileReader reader = ParquetFileReader.open(conf, filePath)) {
                 ParquetMetadata metadata = reader.getFooter();
@@ -117,67 +125,67 @@ public class ParquetSchemaAnalyzer {
                 MessageType schema = metadata.getFileMetaData().getSchema();
 
                 // Analyze row groups
-                System.out.println("\nNumber of Row Groups: " + blocks.size());
+                writer.write("\nNumber of Row Groups: " + blocks.size() + "\n");
                 for (int i = 0; i < blocks.size(); i++) {
                     BlockMetaData block = blocks.get(i);
                     long rowCount = block.getRowCount();
                     long totalSize = block.getTotalByteSize();
-                    System.out.println("\nRow Group " + i + ":");
-                    System.out.println("  - Row Count: " + rowCount);
-                    System.out.println("  - Total Size: " + totalSize + " bytes");
+                    writer.write("\nRow Group " + i + ":\n");
+                    writer.write("  - Row Count: " + rowCount + "\n");
+                    writer.write("  - Total Size: " + totalSize + " bytes\n");
 
                     // Check if row group size is optimal (128 MB to 1 GB is recommended)
                     if (totalSize >= 128 * 1024 * 1024 && totalSize <= 1024 * 1024 * 1024) {
-                        System.out.println("  ✅ Good: Row group size is within the recommended range (128 MB to 1 GB).");
+                        writer.write("  ✅ Good: Row group size is within the recommended range (128 MB to 1 GB).\n");
                     } else {
-                        System.out.println("  ❌ Bad: Row group size is outside the recommended range. Consider adjusting row group size.");
+                        writer.write("  ❌ Bad: Row group size is outside the recommended range. Consider adjusting row group size.\n");
                     }
 
                     // Analyze column chunks
-                    System.out.println("  Column Chunks:");
+                    writer.write("  Column Chunks:\n");
                     for (ColumnChunkMetaData column : block.getColumns()) {
                         String columnName = column.getPath().toDotString();
                         long columnSize = column.getTotalSize();
-                        System.out.println("    - Column: " + columnName);
-                        System.out.println("      Size: " + columnSize + " bytes");
+                        writer.write("    - Column: " + columnName + "\n");
+                        writer.write("      Size: " + columnSize + " bytes\n");
 
                         // Check if column chunk size is reasonable
                         if (columnSize > 0) {
-                            System.out.println("      ✅ Good: Column chunk has data.");
+                            writer.write("      ✅ Good: Column chunk has data.\n");
                         } else {
-                            System.out.println("      ❌ Bad: Column chunk is empty or too small.");
+                            writer.write("      ❌ Bad: Column chunk is empty or too small.\n");
                         }
 
                         // Check dictionary encoding
                         if (!column.getEncodings().contains(Encoding.PLAIN_DICTIONARY)) {
-
+                            // Try to find the column in the DataFrame schema
                             StructField field = findColumnInSchema(df.schema(), columnName);
                             if (field != null) {
-                                    DataType dataType = field.dataType();
-                            // Get the column's data type
-                            //DataType dataType = df.schema().apply(columnName).dataType();
+                                DataType dataType = field.dataType();
+
                                 // Calculate cardinality based on data type
                                 long cardinality;
+                                if (dataType instanceof ArrayType) {
+                                    // Flatten the array column and calculate cardinality
+                                    cardinality = df.select(functions.explode(functions.col(columnName)).as("flattened"))
+                                                   .distinct()
+                                                   .count();
+                                } else if (dataType instanceof MapType) {
+                                    // Flatten the map column (keys and values) and calculate cardinality
+                                    cardinality = df.select(functions.explode(functions.map_keys(functions.col(columnName))).as("flattened"))
+                                                   .distinct()
+                                                   .count();
+                                } else {
+                                    // Calculate cardinality for non-complex types
+                                    cardinality = df.select(columnName).distinct().count();
+                                }
 
-                            if (dataType instanceof ArrayType) {
-                                // Flatten the array column and calculate cardinality
-                                cardinality = df.select(functions.explode(functions.col(columnName)).as("flattened"))
-                                               .distinct()
-                                               .count();
-                            } else if (dataType instanceof MapType) {
-                                // Flatten the map column (keys and values) and calculate cardinality
-                                cardinality = df.select(functions.explode(functions.map_keys(functions.col(columnName))).as("flattened"))
-                                               .distinct()
-                                               .count();
+                                // Display warning if cardinality is low
+                                if (cardinality < LOW_CARDINALITY_THRESHOLD) {
+                                    writer.write("      ⚠️ Warning: Dictionary encoding is not used, but cardinality is low (" + cardinality + "). Consider enabling dictionary encoding for better performance.\n");
+                                }
                             } else {
-                                // Calculate cardinality for non-complex types
-                                cardinality = df.select(columnName).distinct().count();
-                            }
-                            
-
-                            // Display warning if cardinality is low
-                            if (cardinality < LOW_CARDINALITY_THRESHOLD) {
-                                System.out.println("      ⚠️ Warning: Dictionary encoding is not used, but cardinality is low (" + cardinality + "). Consider enabling dictionary encoding for better performance.");
+                                writer.write("      ⚠️ Warning: Column '" + columnName + "' not found in DataFrame schema. Skipping cardinality calculation.\n");
                             }
                         }
                     }
@@ -185,30 +193,11 @@ public class ParquetSchemaAnalyzer {
             }
         }
 
-        System.out.println("\n=== End of Row Group and Column Chunk Analysis ===");
+        writer.write("\n=== End of Row Group and Column Chunk Analysis ===\n");
     }
 
-    // Helper method to find a column in the schema (handles nested columns)
-private static StructField findColumnInSchema(StructType schema, String columnName) {
-    // Split the column name by dots to handle nested columns
-    String[] parts = columnName.split("\\.");
-    StructField field = null;
-    StructType currentSchema = schema;
-
-    for (String part : parts) {
-        field = currentSchema.fields().find(f -> f.name().equals(part)).orElse(null);
-        if (field == null) {
-            return null; // Column not found
-        }
-        if (field.dataType() instanceof StructType) {
-            currentSchema = (StructType) field.dataType(); // Traverse nested schema
-        }
-    }
-
-    return field;
-}
-    private static void analyzePredicatePushdown(String parquetDirPath) throws IOException {
-        System.out.println("\n=== Predicate Pushdown Optimization Analysis ===");
+    private static void analyzePredicatePushdown(String parquetDirPath, BufferedWriter writer) throws IOException {
+        writer.write("\n=== Predicate Pushdown Optimization Analysis ===\n");
 
         // Get all Parquet files in the directory
         Configuration conf = new Configuration();
@@ -219,7 +208,7 @@ private static StructField findColumnInSchema(StructType schema, String columnNa
         // Iterate through each Parquet file
         for (FileStatus fileStatus : fileStatuses) {
             Path filePath = fileStatus.getPath();
-            System.out.println("\nAnalyzing file: " + filePath);
+            writer.write("\nAnalyzing file: " + filePath + "\n");
 
             try (ParquetFileReader reader = ParquetFileReader.open(conf, filePath)) {
                 ParquetMetadata metadata = reader.getFooter();
@@ -228,26 +217,52 @@ private static StructField findColumnInSchema(StructType schema, String columnNa
                 // Analyze predicate pushdown support
                 for (int i = 0; i < blocks.size(); i++) {
                     BlockMetaData block = blocks.get(i);
-                    System.out.println("\nRow Group " + i + ":");
+                    writer.write("\nRow Group " + i + ":\n");
 
                     for (ColumnChunkMetaData column : block.getColumns()) {
                         String columnName = column.getPath().toDotString();
-                        System.out.println("  Column: " + columnName);
+                        writer.write("  Column: " + columnName + "\n");
 
                         // Check if statistics are available for predicate pushdown
                         if (column.getStatistics() != null) {
-                            System.out.println("    ✅ Good: Statistics available for predicate pushdown.");
-                            System.out.println("      Min: " + column.getStatistics().genericGetMin());
-                            System.out.println("      Max: " + column.getStatistics().genericGetMax());
-                            System.out.println("      Null Count: " + column.getStatistics().getNumNulls());
+                            writer.write("    ✅ Good: Statistics available for predicate pushdown.\n");
+                            writer.write("      Min: " + column.getStatistics().genericGetMin() + "\n");
+                            writer.write("      Max: " + column.getStatistics().genericGetMax() + "\n");
+                            writer.write("      Null Count: " + column.getStatistics().getNumNulls() + "\n");
                         } else {
-                            System.out.println("    ❌ Bad: No statistics available. Predicate pushdown will not be optimized for this column.");
+                            writer.write("    ❌ Bad: No statistics available. Predicate pushdown will not be optimized for this column.\n");
                         }
                     }
                 }
             }
         }
 
-        System.out.println("\n=== End of Predicate Pushdown Analysis ===");
+        writer.write("\n=== End of Predicate Pushdown Analysis ===\n");
+    }
+
+    // Helper method to find a column in the schema (handles nested columns)
+    private static StructField findColumnInSchema(StructType schema, String columnName) {
+        // Split the column name by dots to handle nested columns
+        String[] parts = columnName.split("\\.");
+        StructField field = null;
+        StructType currentSchema = schema;
+
+        for (String part : parts) {
+            field = null; // Reset field for each part
+            for (StructField f : currentSchema.fields()) {
+                if (f.name().equals(part)) {
+                    field = f;
+                    break;
+                }
+            }
+            if (field == null) {
+                return null; // Column not found
+            }
+            if (field.dataType() instanceof StructType) {
+                currentSchema = (StructType) field.dataType(); // Traverse nested schema
+            }
+        }
+
+        return field;
     }
 }
