@@ -45,6 +45,118 @@ public class ParquetSchemaAnalyzer {
         spark.stop();
     }
 
+    /**
+    import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.*;
+import org.apache.parquet.column.Encoding;
+import org.apache.parquet.hadoop.ParquetFileReader;
+import org.apache.parquet.hadoop.metadata.*;
+import org.apache.parquet.schema.MessageType;
+import org.apache.spark.sql.*;
+import org.apache.spark.sql.functions;
+import org.apache.spark.sql.types.*;
+
+import java.io.IOException;
+import java.util.*;
+import java.util.stream.Collectors;
+
+public class ParquetSchemaAnalyzer {
+
+    private static final int LOW_CARDINALITY_THRESHOLD = 10000; // Cardinality threshold for dictionary encoding check
+
+    public static void main(String[] args) throws IOException {
+        if (args.length < 1) {
+            System.err.println("Usage: ParquetSchemaAnalyzer <parquet-directory>");
+            System.exit(1);
+        }
+
+        String parquetDir = args[0];
+
+        // Initialize SparkSession
+        SparkSession spark = SparkSession.builder()
+                .appName("Parquet Schema Analyzer")
+                .master("local[*]") // Runs locally
+                .getOrCreate();
+
+        // Read the entire dataset (all Parquet files in the directory)
+        Dataset<Row> df = spark.read().parquet(parquetDir);
+
+        // Analyze schema across all files
+        analyzeSchema(df, parquetDir);
+
+        // Stop Spark session
+        spark.stop();
+    }
+
+    private static void analyzeSchema(Dataset<Row> df, String parquetDir) throws IOException {
+        System.out.println("\n==== PARQUET SCHEMA & DICTIONARY ENCODING ANALYSIS ====");
+
+        // Get schema
+        StructType schema = df.schema();
+
+        // Read metadata from all Parquet files
+        Configuration conf = new Configuration();
+        FileSystem fs = FileSystem.get(conf);
+        Path dirPath = new Path(parquetDir);
+        FileStatus[] files = fs.listStatus(dirPath, path -> path.getName().endsWith(".parquet"));
+
+        if (files.length == 0) {
+            System.err.println("No Parquet files found in directory: " + parquetDir);
+            return;
+        }
+
+        // Collect metadata from all Parquet files
+        List<ParquetMetadata> metadataList = new ArrayList<>();
+        for (FileStatus file : files) {
+            try (ParquetFileReader reader = ParquetFileReader.open(conf, file.getPath())) {
+                metadataList.add(reader.getFooter());
+            }
+        }
+
+        // Loop through all columns in schema
+        for (StructField field : schema.fields()) {
+            String fieldName = field.name();
+            DataType dataType = field.dataType();
+
+            System.out.println("Column: " + fieldName);
+            System.out.println(" - Data Type: " + dataType);
+
+            // Skip nested fields (ArrayType, StructType)
+            if (!(dataType instanceof StringType || dataType instanceof IntegerType || dataType instanceof LongType || dataType instanceof DoubleType)) {
+                System.out.println(" ⏩ Skipping non-primitive field: " + fieldName + " (Nested types are not dictionary-encoded)");
+                continue;
+            }
+
+            // Estimate Cardinality
+            long cardinality = df.select(fieldName).agg(functions.approx_count_distinct(fieldName)).first().getLong(0);
+            System.out.println(" - Cardinality (Approx Unique Values): " + cardinality);
+
+            // Check Dictionary Encoding across all Parquet files
+            boolean isDictionaryEncoded = metadataList.stream()
+                    .flatMap(meta -> meta.getBlocks().stream())
+                    .flatMap(block -> block.getColumns().stream())
+                    .filter(column -> column.getPath().toDotString().equals(fieldName))
+                    .anyMatch(column -> column.getEncodings().contains(Encoding.PLAIN_DICTIONARY));
+
+            // Show warnings only if dictionary encoding is missing on low-cardinality fields
+            if (cardinality < LOW_CARDINALITY_THRESHOLD && !isDictionaryEncoded) {
+                System.out.println(" ⚠️  WARNING: Column '" + fieldName + "' has LOW cardinality but is NOT using dictionary encoding.");
+                System.out.println("    → Consider enabling dictionary encoding to optimize storage and queries.");
+            } else if (isDictionaryEncoded) {
+                System.out.println(" ✅ Dictionary Encoding is USED.");
+            } else {
+                System.out.println(" ⏩ Skipping dictionary check for high-cardinality column.");
+            }
+
+            System.out.println();
+        }
+    }
+}
+
+
+
+    */
+    
     private static void analyzeSchema(StructType schema) {
         System.out.println("\n==== PARQUET SCHEMA ANALYSIS ====");
 
