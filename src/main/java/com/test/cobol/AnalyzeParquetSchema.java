@@ -1,8 +1,8 @@
-package com.test.cobol;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.parquet.column.Encoding;
 import org.apache.parquet.hadoop.ParquetFileReader;
 import org.apache.parquet.hadoop.metadata.BlockMetaData;
 import org.apache.parquet.hadoop.metadata.ColumnChunkMetaData;
@@ -15,9 +15,14 @@ import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
 
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
-public class AnalyzeParquetSchema {
+public class ParquetSchemaAnalyzer {
+
+    // Threshold for low cardinality (adjust as needed)
+    private static final long LOW_CARDINALITY_THRESHOLD = 10000;
 
     public static void main(String[] args) throws IOException {
         // Initialize SparkSession
@@ -36,7 +41,7 @@ public class AnalyzeParquetSchema {
         analyzeSchema(df.schema());
 
         // Analyze row group and column chunk sizes for all files in the directory
-        analyzeRowGroupsAndColumnChunks(parquetDirPath);
+        analyzeRowGroupsAndColumnChunks(parquetDirPath, df);
 
         // Analyze predicate pushdown optimization for all files in the directory
         analyzePredicatePushdown(parquetDirPath);
@@ -90,7 +95,7 @@ public class AnalyzeParquetSchema {
         return false;
     }
 
-    private static void analyzeRowGroupsAndColumnChunks(String parquetDirPath) throws IOException {
+    private static void analyzeRowGroupsAndColumnChunks(String parquetDirPath, Dataset<Row> df) throws IOException {
         System.out.println("\n=== Row Group and Column Chunk Analysis ===");
 
         // Get all Parquet files in the directory
@@ -139,6 +144,15 @@ public class AnalyzeParquetSchema {
                             System.out.println("      ✅ Good: Column chunk has data.");
                         } else {
                             System.out.println("      ❌ Bad: Column chunk is empty or too small.");
+                        }
+
+                        // Check dictionary encoding
+                        if (!column.getEncodings().contains(Encoding.PLAIN_DICTIONARY)) {
+                            // Calculate cardinality for the column
+                            long cardinality = df.select(columnName).distinct().count();
+                            if (cardinality < LOW_CARDINALITY_THRESHOLD) {
+                                System.out.println("      ⚠️ Warning: Dictionary encoding is not used, but cardinality is low (" + cardinality + "). Consider enabling dictionary encoding for better performance.");
+                            }
                         }
                     }
                 }
