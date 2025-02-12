@@ -46,47 +46,7 @@ public class ParquetSchemaAnalyzer {
     }
 
     /**
-    import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.*;
-import org.apache.parquet.column.Encoding;
-import org.apache.parquet.hadoop.ParquetFileReader;
-import org.apache.parquet.hadoop.metadata.*;
-import org.apache.parquet.schema.MessageType;
-import org.apache.spark.sql.*;
-import org.apache.spark.sql.functions;
-import org.apache.spark.sql.types.*;
-
-import java.io.IOException;
-import java.util.*;
-import java.util.stream.Collectors;
-
-public class ParquetSchemaAnalyzer {
-
-    private static final int LOW_CARDINALITY_THRESHOLD = 10000; // Cardinality threshold for dictionary encoding check
-
-    public static void main(String[] args) throws IOException {
-        if (args.length < 1) {
-            System.err.println("Usage: ParquetSchemaAnalyzer <parquet-directory>");
-            System.exit(1);
-        }
-
-        String parquetDir = args[0];
-
-        // Initialize SparkSession
-        SparkSession spark = SparkSession.builder()
-                .appName("Parquet Schema Analyzer")
-                .master("local[*]") // Runs locally
-                .getOrCreate();
-
-        // Read the entire dataset (all Parquet files in the directory)
-        Dataset<Row> df = spark.read().parquet(parquetDir);
-
-        // Analyze schema across all files
-        analyzeSchema(df, parquetDir);
-
-        // Stop Spark session
-        spark.stop();
-    }
+    
 
     private static void analyzeSchema(Dataset<Row> df, String parquetDir) throws IOException {
         System.out.println("\n==== PARQUET SCHEMA & DICTIONARY ENCODING ANALYSIS ====");
