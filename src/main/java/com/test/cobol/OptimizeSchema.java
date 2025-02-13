@@ -45,7 +45,9 @@ public class OptimizeSchema {
 
                     // Flatten the first element of the array
                     df = df.withColumn(arrayFieldName + "_0", functions.col(arrayFieldName).getItem(0))
-                           .withColumn(arrayFieldName + "_extra", functions.expr("slice(" + arrayFieldName + ", 2, size(" + arrayFieldName + ") - 1)"));
+                           .withColumn(arrayFieldName + "_extra", functions.expr(
+                               "CASE WHEN size(" + arrayFieldName + ") > 1 THEN slice(" + arrayFieldName + ", 2, size(" + arrayFieldName + ") - 1) ELSE array() END"
+                           ));
 
                     // Drop the original array field
                     df = df.drop(arrayFieldName);
