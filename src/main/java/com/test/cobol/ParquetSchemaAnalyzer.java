@@ -57,7 +57,19 @@ public class ParquetSchemaAnalyzer {
         double averageSize = result.getDouble(0);
         System.out.println("📊 Average number of elements in array field '" + arrayField + "': " + averageSize);
 
-    
+    // another way,
+    // Add a column to count the number of elements in the 'trds' array
+        Dataset<Row> dfWithCount = df.withColumn("trds_count", functions.size(functions.col("trds")));
+
+        // Calculate the average number of elements in the 'trds' array
+        Row result = dfWithCount.agg(functions.avg("trds_count")).head();
+
+        // Extract the average value
+        double averageCount = result.getDouble(0);
+
+        // Print the result
+        System.out.println("Average number of elements in 'trds' array: " + averageCount);
+        
     private static void analyzeSchema(Dataset<Row> df) {
         System.out.println("\n==== PARQUET SCHEMA NULLABILITY ANALYSIS ====");
 
