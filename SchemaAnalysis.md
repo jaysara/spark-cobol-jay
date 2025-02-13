@@ -1,46 +1,73 @@
-Storage Size Difference Between Nullable and Non-Nullable Columns in Parquet (for 1000 Rows)
-Parquet uses definition levels to track NULL values, which introduce extra metadata storage for nullable columns. Let's break down the storage size for both columns.
+### 1. **Non-Nullable Column (required int32 value)**
 
-🚀 Storage Calculation for Each Column
-1️⃣ Non-Nullable Column (value - required int32)
-Since it's always present, Parquet stores only the raw values.
-Storage Size (in bytes):
-int32 (4 bytes per row)
-1000 rows × 4 bytes = 4000 bytes (4 KB)
-✔ No extra storage overhead.
+*   **Storage**:
+    
+    *   A non-nullable column does not require definition levels because all values are guaranteed to be non-null.
+        
+    *   Each int32 value occupies **4 bytes**.
+        
+*   **Total Storage for 1000 Rows**:
+    
+    *   1000 rows×4 bytes=4000 bytes1000 rows×4 bytes=4000 bytes.
+        
 
-2️⃣ Nullable Column (id - optional int32)
-Nullable columns require an extra "definition level" to track missing values.
-The definition level uses 1-2 bits per row (depends on encoding).
-Total storage includes:
-Definition levels (~1.5 bits per row on average, stored as RLE/bit-packed)
-Actual int32 values (only for non-null entries)
-📌 Scenario 1: If All 1000 Rows Have Non-Null id Values
-Definition levels: ~1.5 bits × 1000 rows = ~187.5 bytes
-Actual int32 storage: 4 bytes × 1000 = 4000 bytes
-Total Storage for id: 4188 bytes (~4.1 KB)
-🚀 Overhead: ~188 bytes (~4.7% more than non-nullable column).
+### 2. **Nullable Column (optional int32 id)**
 
-📌 Scenario 2: If 50% of id Values Are NULL
-Definition levels: ~1.5 bits × 1000 rows = ~187.5 bytes
-Actual int32 storage: 4 bytes × 500 non-null values = 2000 bytes
-Total Storage for id: 2188 bytes (~2.1 KB)
-🚀 Overhead remains (~188 bytes), but actual data stored is less.
+*   **Storage**:
+    
+    *   A nullable column requires **definition levels** to indicate whether a value is null or not.
+        
+    *   Each int32 value occupies **4 bytes** (if not null).
+        
+    *   Definition levels are stored using **Run-Length Encoding (RLE)** or **Bit Packing**, which typically adds **1 bit per row** to indicate null/non-null status.
+        
+*   **Assumptions**:
+    
+    *   Let's assume **50% of the values are null** (500 nulls and 500 non-nulls).
+        
+    *   Each non-null value occupies 4 bytes.
+        
+    *   Definition levels add 1 bit per row.
+        
+*   **Total Storage for 1000 Rows**:
+    
+    *   **Data Storage**:
+        
+        *   500 non-null values×4 bytes=2000 bytes500 non-null values×4 bytes=2000 bytes.
+            
+    *   **Definition Levels**:
+        
+        *   1000 rows×1 bit=1000 bits=125 bytes1000 rows×1 bit=1000 bits=125 bytes.
+            
+    *   **Total**:
+        
+        *   2000 bytes+125 bytes=2125 bytes2000 bytes+125 bytes=2125 bytes.
+            
 
-📌 Scenario 3: If 90% of id Values Are NULL
-Definition levels: ~1.5 bits × 1000 rows = ~187.5 bytes
-Actual int32 storage: 4 bytes × 100 non-null values = 400 bytes
-Total Storage for id: 588 bytes (~0.6 KB)
-🚀 Significant storage savings due to Parquet’s efficient NULL handling.
+### 3. **Comparison**
 
-🚀 Summary: Nullable vs. Non-Nullable Column Storage Size
-Case	Non-Nullable (value)	Nullable (id)	Overhead
-100% Non-Null (id)	4000 bytes	4188 bytes	~188 bytes (4.7%)
-50% NULL (id)	4000 bytes	2188 bytes	~188 bytes (NULLs reduce data size)
-90% NULL (id)	4000 bytes	588 bytes	Huge savings due to fewer stored values
-🚀 Key Takeaways
-✔ Nullable columns have a small metadata overhead (~188 bytes per 1000 rows).
-✔ If most values are NULL, storage savings are significant.
-✔ Definition levels (~1.5 bits per row) are well-optimized but still add overhead.
-✔ Use required where possible to avoid metadata overhead & improve query efficiency.
+*   **Non-Nullable Column (value)**:
+    
+    *   4000 bytes4000 bytes.
+        
+*   **Nullable Column (id)**:
+    
+    *   2125 bytes2125 bytes (with 50% null values).
+        
 
+### 4. **General Formula**
+
+*   Total Storage=(Number of Non-Null Values×Data Size)+(Number of Rows8) bytesTotal Storage=(Number of Non-Null Values×Data Size)+(8Number of Rows​) bytes
+    
+    *   Where:
+        
+        *   Data Size=4 bytesData Size=4 bytes for int32.
+            
+        *   Number of Rows88Number of Rows​ converts bits to bytes for definition levels.
+            
+*   Total Storage=Number of Rows×Data SizeTotal Storage=Number of Rows×Data Size
+    
+
+### 5. **Example Calculation for Different Null Ratios**
+
+**Null RatioNon-Null ValuesData Storage (bytes)Definition Levels (bytes)Total Storage (bytes)**0% (No Nulls)10001000×4=40001000×4=400010008=12581000​=1254000+125=41254000+125=412550%500500×4=2000500×4=200010008=12581000​=1252000+125=21252000+125=212590%100100×4=400100×4=40010008=12581000​=125400+125=525400+125=525
