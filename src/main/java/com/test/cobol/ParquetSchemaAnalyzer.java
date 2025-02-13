@@ -45,7 +45,44 @@ public class ParquetSchemaAnalyzer {
         spark.stop();
     }
 
+    
     /**
+    private static void analyzeSchema(Dataset<Row> df) {
+        System.out.println("\n==== PARQUET SCHEMA NULLABILITY ANALYSIS ====");
+
+        // Get schema
+        StructType schema = df.schema();
+
+        // Loop through all columns
+        for (StructField field : schema.fields()) {
+            String fieldName = field.name();
+            boolean isNullable = field.nullable();
+
+            if (!isNullable) {
+                System.out.println("✅ Column: " + fieldName + " is REQUIRED (No NULL overhead).");
+                continue;
+            }
+
+            // Count total rows
+            long totalRows = df.count();
+            // Count NULL values in this column
+            long nullCount = df.filter(df.col(fieldName).isNull()).count();
+            double nullPercentage = (double) nullCount / totalRows;
+
+            System.out.println("⚠️ Column: " + fieldName);
+            System.out.println(" - Nullable: YES");
+            System.out.println(" - Null Percentage: " + String.format("%.2f", nullPercentage * 100) + "%");
+
+            // Issue warning if too many NULLs
+            if (nullPercentage > HIGH_NULL_THRESHOLD) {
+                System.out.println(" ⚠️ WARNING: More than " + (HIGH_NULL_THRESHOLD * 100) + "% of values are NULL.");
+                System.out.println("    → Consider changing to REQUIRED or using a default value to save space.");
+            }
+
+            System.out.println();
+        }
+    }
+}
     
 
     private static void analyzeSchema(Dataset<Row> df, String parquetDir) throws IOException {
