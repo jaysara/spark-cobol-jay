@@ -57,6 +57,19 @@ public class ParquetSchemaAnalyzer {
         double averageSize = result.getDouble(0);
         System.out.println("📊 Average number of elements in array field '" + arrayField + "': " + averageSize);
 
+long totalRows = df.count();
+        long emptyCount = df.filter(functions.size(df.col(arrayField)).equalTo(0)).count();
+        long singleCount = df.filter(functions.size(df.col(arrayField)).equalTo(1)).count();
+        long multipleCount = df.filter(functions.size(df.col(arrayField)).gt(1)).count();
+
+        // Print the results
+        System.out.println("\n==== ARRAY SIZE ANALYSIS FOR FIELD: '" + arrayField + "' ====");
+        System.out.println("Total Rows: " + totalRows);
+        System.out.println("Rows with Empty Arrays (0 elements): " + emptyCount);
+        System.out.println("Rows with Single Element (1 element): " + singleCount);
+        System.out.println("Rows with Multiple Elements (>1 element): " + multipleCount);
+        System.out.println("=============================================================");
+
     // another way,
     // Add a column to count the number of elements in the 'trds' array
         Dataset<Row> dfWithCount = df.withColumn("trds_count", functions.size(functions.col("trds")));
