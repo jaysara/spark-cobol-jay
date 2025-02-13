@@ -70,6 +70,49 @@ long totalRows = df.count();
         System.out.println("Rows with Multiple Elements (>1 element): " + multipleCount);
         System.out.println("=============================================================");
 
+        // CALCULATE STORAGE SAVINGS
+        // Assuming the array field is named "trds"
+        String arrayField = "trds";
+
+        // Count rows based on number of elements in the array field
+        Dataset<Row> counts = df
+                .withColumn("array_size", size(col(arrayField)))
+                .groupBy("array_size")
+                .count()
+                .orderBy("array_size");
+
+        // Show the distribution
+        System.out.println("📊 Distribution of 'trds' Array Elements:");
+        counts.show();
+
+        // Compute Storage Estimates
+        long totalRows = df.count();
+        long zeroElements = counts.filter("array_size = 0").first().getLong(1);
+        long oneElement = counts.filter("array_size = 1").first().getLong(1);
+        long multiElements = totalRows - (zeroElements + oneElement);
+
+        // Assumed Storage Estimates (bytes per field)
+        int numFields = 30;  // Number of fields per array element
+        int bytesPerField = 20;  // Estimated average bytes per field
+        int metadataOverhead = 8;  // Bytes per field for repetition/definition levels
+
+        // Original (ARRAYType) Storage Calculation
+        long arrayStorage = (zeroElements * metadataOverhead * numFields)
+                + (oneElement * (metadataOverhead + bytesPerField) * numFields)
+                + (multiElements * (metadataOverhead + (bytesPerField * 5)) * numFields);
+
+        // Optimized (Flattened) Storage Calculation
+        long flattenedStorage = totalRows * bytesPerField * numFields;
+
+        // Storage Savings
+        double savings = ((double) (arrayStorage - flattenedStorage) / arrayStorage) * 100;
+
+        System.out.println("\n💾 Estimated Storage Impact:");
+        System.out.printf("   - ARRAY Schema: %.2f MB%n", arrayStorage / (1024.0 * 1024));
+        System.out.printf("   - Flattened Schema: %.2f MB%n", flattenedStorage / (1024.0 * 1024));
+        System.out.printf("   - Expected Storage Reduction: %.2f%%%n", savings);
+
+
     // another way,
     // Add a column to count the number of elements in the 'trds' array
         Dataset<Row> dfWithCount = df.withColumn("trds_count", functions.size(functions.col("trds")));
