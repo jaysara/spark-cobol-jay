@@ -1,3 +1,113 @@
+### **How Many Rows in a Row Group?**
+
+*   The number of rows per Row Group **depends on the row group size setting**.
+    
+*   **Default size**: **128MB per Row Group** (adjustable via parquet.block.size).
+    
+*   Example:
+    
+    *   If each row is **1 KB**, a **128MB Row Group** holds **~128,000 rows**.
+        
+
+### **🔹 Why Are Row Groups Important?**
+
+1.  **Improves Read Performance** → Spark can **skip entire Row Groups** using predicate filtering.
+    
+2.  **Optimizes Compression** → Similar column values **compress better together** in a single Row Group.
+    
+3.  **Better Distributed Processing** → Each Row Group can be processed **independently**, improving parallelism.
+    
+
+### **🚀 Optimizing Row Groups in Spark**
+
+*   **Larger Row Groups** → Fewer metadata overheads but **less skipping of unnecessary data**.
+    
+*   **Smaller Row Groups** → More metadata but **better pruning for selective queries**.
+    
+
+You can **control Row Group size** in Spark:
+
+Plain textANTLR4BashCC#CSSCoffeeScriptCMakeDartDjangoDockerEJSErlangGitGoGraphQLGroovyHTMLJavaJavaScriptJSONJSXKotlinLaTeXLessLuaMakefileMarkdownMATLABMarkupObjective-CPerlPHPPowerShell.propertiesProtocol BuffersPythonRRubySass (Sass)Sass (Scss)SchemeSQLShellSwiftSVGTSXTypeScriptWebAssemblyYAMLXML`   javaCopyEditspark.conf.set("parquet.block.size", "256MB");   `
+
+👉 This increases **Row Group size** to **256MB**, reducing the number of Row Groups per file.
+
+### **🔹 Summary**
+
+ConceptDescription**Row Group**A subset of rows stored together in a Parquet file**Column Chunk**A section of a Row Group storing a specific column**Default Size**128MB (can be configured)**Optimization**Balance size for better query performance & compression**Query Efficiency**Enables skipping unnecessary Row Groups
+
+Would you like help **tuning Row Group size** for your dataset? 🚀
+
+4o
+
+##### You said:
+
+yess
+
+###### ChatGPT said:
+
+### **🚀 Tuning Row Group Size for Optimal Parquet Performance in Spark**
+
+The **ideal Row Group size** depends on your dataset size, query patterns, and storage efficiency. Let's break it down step by step.
+
+**🔹 1. Understanding Parquet Block Size and Row Groups**
+---------------------------------------------------------
+
+### **How Parquet Stores Data:**
+
+*   **Parquet Block Size (parquet.block.size)** → Defines the **maximum size** of a **Row Group** (default: **128MB**).
+    
+*   **Row Group Size Impact**:
+    
+    *   🚀 **Larger Row Groups (e.g., 256MB-512MB)** → **Fewer Row Groups per file** → **Better compression & I/O throughput**.
+        
+    *   ⚡ **Smaller Row Groups (e.g., 64MB)** → **More Row Groups per file** → **Better pruning for selective queries**.
+        
+
+**🔹 2. Finding the Optimal Row Group Size**
+--------------------------------------------
+
+You can calculate the **optimal Row Group size** based on:
+
+*   **Row Size (bytes per row)**
+    
+*   **Dataset Size**
+    
+*   **Query Workload** (full scans vs. selective filtering)
+    
+
+### **📌 Estimating Row Group Size**
+
+Formula:
+
+Plain textANTLR4BashCC#CSSCoffeeScriptCMakeDartDjangoDockerEJSErlangGitGoGraphQLGroovyHTMLJavaJavaScriptJSONJSXKotlinLaTeXLessLuaMakefileMarkdownMATLABMarkupObjective-CPerlPHPPowerShell.propertiesProtocol BuffersPythonRRubySass (Sass)Sass (Scss)SchemeSQLShellSwiftSVGTSXTypeScriptWebAssemblyYAMLXML`   sqlCopyEditRow Group Size = (Row Size) * (Rows per Group)   `
+
+#### **Example Calculation:**
+
+*   **Each row size** = **1 KB**
+    
+*   **Desired Row Group Size** = **256MB**
+    
+*   **Rows per Row Group** = 256MB / 1KB = **256,000 rows per group**.
+    
+
+### **📌 Adjusting Row Group Size in Spark**
+
+Plain textANTLR4BashCC#CSSCoffeeScriptCMakeDartDjangoDockerEJSErlangGitGoGraphQLGroovyHTMLJavaJavaScriptJSONJSXKotlinLaTeXLessLuaMakefileMarkdownMATLABMarkupObjective-CPerlPHPPowerShell.propertiesProtocol BuffersPythonRRubySass (Sass)Sass (Scss)SchemeSQLShellSwiftSVGTSXTypeScriptWebAssemblyYAMLXML`   javaCopyEditspark.conf.set("parquet.block.size", "256MB");  // Increase to 256MB   `
+
+👉 **Larger Row Groups improve scan performance** for **full-table queries** but might load unnecessary data if filtering is applied.
+
+**🔹 3. Optimizing for Your Dataset**
+-------------------------------------
+
+### **When to Increase Row Group Size (256MB - 512MB)?**
+
+✅ **Larger datasets (TB scale)**✅ **Full-table scans or analytical queries**✅ **When storage & I/O bandwidth is not a bottleneck**✅ **High cardinality columns (better compression & less metadata overhead)**
+
+### **When to Decrease Row Group Size (64MB - 128MB)?**
+
+✅ **Small datasets (GB scale)**✅ **Frequent selective queries with WHERE filters**✅ **High query concurrency (reduces I/O read per query)**✅ **Sparse columns or highly nested structures**
+
+
 ### 1. **Non-Nullable Column (required int32 value)**
 
 *   **Storage**:
