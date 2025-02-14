@@ -1,3 +1,79 @@
+**🔹 1. How Dictionary Encoding Works**
+---------------------------------------
+
+*   **Works well for low-cardinality columns** (few unique values, many duplicates).
+    
+*   Stores unique values in a **dictionary** and replaces actual values with **indexes**.
+    
+*   **Improves compression and reduces I/O**, especially for string and categorical data.
+    
+
+**🔹 2. Enabling Dictionary Encoding in Spark**
+-----------------------------------------------
+
+You can enforce dictionary encoding **globally** or **per field** when writing Parquet files.
+
+### **✅ Method 1: Enable Dictionary Encoding for All Columns**
+
+Set the following Spark configuration before writing:
+
+Plain textANTLR4BashCC#CSSCoffeeScriptCMakeDartDjangoDockerEJSErlangGitGoGraphQLGroovyHTMLJavaJavaScriptJSONJSXKotlinLaTeXLessLuaMakefileMarkdownMATLABMarkupObjective-CPerlPHPPowerShell.propertiesProtocol BuffersPythonRRubySass (Sass)Sass (Scss)SchemeSQLShellSwiftSVGTSXTypeScriptWebAssemblyYAMLXML`   javaCopyEditspark.conf.set("parquet.enable.dictionary", "true");   `
+
+This ensures **dictionary encoding is applied** wherever possible.
+
+### **✅ Method 2: Define Schema & Control Dictionary Encoding Per Field**
+
+To **explicitly define dictionary encoding**, you need to set **compression options** while writing Parquet.
+
+Example **schema definition** with dictionary encoding:
+
+Plain textANTLR4BashCC#CSSCoffeeScriptCMakeDartDjangoDockerEJSErlangGitGoGraphQLGroovyHTMLJavaJavaScriptJSONJSXKotlinLaTeXLessLuaMakefileMarkdownMATLABMarkupObjective-CPerlPHPPowerShell.propertiesProtocol BuffersPythonRRubySass (Sass)Sass (Scss)SchemeSQLShellSwiftSVGTSXTypeScriptWebAssemblyYAMLXML`   javaCopyEditimport org.apache.spark.sql.types.*;  StructType schema = new StructType()      .add("id", DataTypes.IntegerType, false)  // No dictionary encoding (Primitive Type)      .add("category", DataTypes.StringType, true)  // Best for Dictionary Encoding      .add("status", DataTypes.StringType, true);  // Another candidate for encoding   `
+
+### **📌 Writing with Dictionary Encoding**
+
+Plain textANTLR4BashCC#CSSCoffeeScriptCMakeDartDjangoDockerEJSErlangGitGoGraphQLGroovyHTMLJavaJavaScriptJSONJSXKotlinLaTeXLessLuaMakefileMarkdownMATLABMarkupObjective-CPerlPHPPowerShell.propertiesProtocol BuffersPythonRRubySass (Sass)Sass (Scss)SchemeSQLShellSwiftSVGTSXTypeScriptWebAssemblyYAMLXML`   javaCopyEditdf.write()    .mode("overwrite")    .option("parquet.enable.dictionary", "true")  // Ensure dictionary encoding    .option("parquet.dictionary.page.size", "1048576")  // Increase dictionary page size (default 1MB)    .parquet("path/to/output");   `
+
+👉 **Dictionary Page Size**: Controls how much memory is allocated for dictionary pages per column.👉 **Good values**: 1MB - 2MB for large categorical columns.
+
+**🔹 3. How to Verify Dictionary Encoding is Applied**
+------------------------------------------------------
+
+After writing the Parquet file, check metadata using parquet-tools:
+
+Plain textANTLR4BashCC#CSSCoffeeScriptCMakeDartDjangoDockerEJSErlangGitGoGraphQLGroovyHTMLJavaJavaScriptJSONJSXKotlinLaTeXLessLuaMakefileMarkdownMATLABMarkupObjective-CPerlPHPPowerShell.propertiesProtocol BuffersPythonRRubySass (Sass)Sass (Scss)SchemeSQLShellSwiftSVGTSXTypeScriptWebAssemblyYAMLXML`   shCopyEditparquet-tools meta path/to/output/part-00000.parquet   `
+
+Look for dictionary encoding metadata under each column:
+
+Plain textANTLR4BashCC#CSSCoffeeScriptCMakeDartDjangoDockerEJSErlangGitGoGraphQLGroovyHTMLJavaJavaScriptJSONJSXKotlinLaTeXLessLuaMakefileMarkdownMATLABMarkupObjective-CPerlPHPPowerShell.propertiesProtocol BuffersPythonRRubySass (Sass)Sass (Scss)SchemeSQLShellSwiftSVGTSXTypeScriptWebAssemblyYAMLXML`   vbnetCopyEditid: INT32 (required, plain encoding)  category: BYTE_ARRAY (optional, dictionary encoding)  status: BYTE_ARRAY (optional, dictionary encoding)   `
+
+✅ **If a column uses dictionary encoding, it will show as BYTE\_ARRAY (dictionary)**.❌ **If dictionary encoding is disabled, it will use plain encoding instead.**
+
+**🔹 4. When to Use Dictionary Encoding?**
+------------------------------------------
+
+### **Best Candidates for Dictionary Encoding**
+
+✅ **String columns with repeated values** (e.g., country, category, status)✅ **Low-cardinality categorical columns** (e.g., gender, user\_type)✅ **Integer columns with a small unique range** (e.g., error\_code, product\_id)
+
+### **When NOT to Use Dictionary Encoding?**
+
+❌ **High-cardinality columns** (e.g., UUID, timestamp) → Increases overhead.❌ **Already well-compressed numeric columns** (e.g., double, long).
+
+**🔹 5. Optimizing Further**
+----------------------------
+
+*   Increase dictionary page size (parquet.dictionary.page.size) if you have **many unique values**.
+    
+*   javaCopyEditspark.conf.set("parquet.enable.dictionary", "false");
+    
+*   javaCopyEditdf.write().option("spark.sql.parquet.compression.codec", "SNAPPY");
+    
+
+**🚀 Summary**
+--------------
+
+**SettingPurposeRecommended Value**parquet.enable.dictionaryEnables dictionary encodingtrueparquet.dictionary.page.sizeControls dictionary memory allocation1MB - 2MBspark.sql.parquet.compression.codecImproves storage & query performanceSNAPPY
+
 ### **Storage Overhead for ArrayType in Parquet**
 
 1.  **Repetition & Definition Levels**:
