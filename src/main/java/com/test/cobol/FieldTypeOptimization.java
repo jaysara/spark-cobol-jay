@@ -75,3 +75,70 @@ public class ParquetSchemaOptimizer {
         spark.stop();
     }
 }
+
+import org.apache.spark.sql.*;
+import org.apache.spark.sql.types.*;
+import static org.apache.spark.sql.functions.*;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class ParquetLongToIntegerOptimizer {
+    public static void main(String[] args) {
+        SparkSession spark = SparkSession.builder()
+                .appName("ParquetLongToIntegerOptimizer")
+                .master("local[*]")  // Adjust for cluster mode
+                .config("spark.sql.parquet.enable.dictionary", "true")  // Enable dictionary encoding
+                .getOrCreate();
+
+        // Path to original Parquet dataset
+        String inputPath = "input/parquet_dataset";
+        String outputPath = "output/optimized_parquet";
+
+        // Read original Parquet file
+        Dataset<Row> df = spark.read().parquet(inputPath);
+        StructType originalSchema = df.schema();
+
+        // Threshold for low-cardinality optimization (e.g., < 0.1% of total rows)
+        long rowCount = df.count();
+        long cardinalityThreshold = (long) (rowCount * 0.001); // Adjust threshold as needed
+
+        List<StructField> optimizedFields = new ArrayList<>();
+        List<String> fieldsToConvert = new ArrayList<>();
+
+        // Analyze schema & optimize LongType fields
+        for (StructField field : originalSchema.fields()) {
+            if (field.dataType() == DataTypes.LongType) {
+                String fieldName = field.name();
+                long distinctCount = df.select(fieldName).distinct().count();
+
+                if (distinctCount < cardinalityThreshold) {
+                    System.out.println("⚡ Optimizing field: " + fieldName + " (LongType → IntegerType)");
+                    optimizedFields.add(new StructField(fieldName, DataTypes.IntegerType, field.nullable(), field.metadata()));
+                    fieldsToConvert.add(fieldName);
+                } else {
+                    optimizedFields.add(field);
+                }
+            } else {
+                optimizedFields.add(field);
+            }
+        }
+
+        // Create new schema
+        StructType optimizedSchema = new StructType(optimizedFields.toArray(new StructField[0]));
+
+        // Convert Long fields to Integer in the dataset
+        Dataset<Row> optimizedDF = df;
+        for (String fieldName : fieldsToConvert) {
+            optimizedDF = optimizedDF.withColumn(fieldName, col(fieldName).cast(DataTypes.IntegerType));
+        }
+
+        // Write optimized Parquet file
+        optimizedDF.write().mode(SaveMode.Overwrite).parquet(outputPath);
+
+        System.out.println("✅ Optimization complete! New dataset written to: " + outputPath);
+
+        spark.stop();
+    }
+}
+
