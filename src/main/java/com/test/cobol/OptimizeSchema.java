@@ -108,10 +108,16 @@ public class ParquetSchemaOptimizer {
 
                 // Count total rows
                 long totalRows = df.count();
-                long zeroElements = counts.filter("array_size = 0").first().getLong(1);
-                long oneElement = counts.filter("array_size = 1").first().getLong(1);
+                Row[] zeroElementsRow = (Row[]) counts.filter("array_size = 0").head(1);
+                long zeroElements = (zeroElementsRow.length > 0) ? zeroElementsRow[0].getLong(1) : 0;
+                
+                Row[] oneElementRow = (Row[]) counts.filter("array_size = 1").head(1);
+                long oneElement = (oneElementRow.length > 0) ? oneElementRow[0].getLong(1) : 0;
+                
+                long totalRows = df.count();
                 long multiElements = totalRows - (zeroElements + oneElement);
 
+               
                 double multiElementRatio = (double) multiElements / totalRows;
                 
                 // Flatten only if less than 30% of rows have >1 elements
