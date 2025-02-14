@@ -68,3 +68,84 @@ public class OptimizeSchema {
         spark.stop();
     }
 }
+
+import org.apache.spark.sql.*;
+import org.apache.spark.sql.types.*;
+import org.apache.spark.sql.functions.*;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class ParquetSchemaOptimizer {
+    public static void main(String[] args) {
+        if (args.length < 2) {
+            System.err.println("Usage: ParquetSchemaOptimizer <inputParquetDir> <outputParquetDir>");
+            System.exit(1);
+        }
+
+        String inputParquetDir = args[0];
+        String outputParquetDir = args[1];
+
+        SparkSession spark = SparkSession.builder()
+                .appName("ParquetSchemaOptimizer")
+                .master("local[*]")  // Change this for cluster execution
+                .getOrCreate();
+
+        // Load the dataset
+        Dataset<Row> df = spark.read().parquet(inputParquetDir);
+        
+        // Get schema and identify flattenable ArrayType fields
+        StructType schema = df.schema();
+        List<String> flattenableArrays = new ArrayList<>();
+
+        for (StructField field : schema.fields()) {
+            if (field.dataType() instanceof ArrayType) {
+                String fieldName = field.name();
+                
+                // Count the distribution of array sizes
+                Dataset<Row> counts = df.withColumn("array_size", functions.size(functions.col(fieldName)))
+                        .groupBy("array_size").count().orderBy("array_size");
+
+                // Count total rows
+                long totalRows = df.count();
+                long zeroElements = counts.filter("array_size = 0").first().getLong(1);
+                long oneElement = counts.filter("array_size = 1").first().getLong(1);
+                long multiElements = totalRows - (zeroElements + oneElement);
+
+                double multiElementRatio = (double) multiElements / totalRows;
+                
+                // Flatten only if less than 30% of rows have >1 elements
+                if (multiElementRatio < 0.3) {
+                    flattenableArrays.add(fieldName);
+                }
+            }
+        }
+
+        System.out.println("📌 Fields to be flattened: " + flattenableArrays);
+
+        // Apply transformations to flatten the dataset
+        Dataset<Row> transformedDf = df;
+        
+        for (String fieldName : flattenableArrays) {
+            // Extract the first element from the array
+            transformedDf = transformedDf.withColumn(fieldName + "_flat", functions.expr(fieldName + "[0]"));
+        
+            // Extract remaining elements (if any) into a new column
+            transformedDf = transformedDf.withColumn(fieldName + "_remaining", functions.expr("slice(" + fieldName + ", 2, size(" + fieldName + "))"));
+        }
+
+        // Drop original arrays that were flattened
+        for (String fieldName : flattenableArrays) {
+            transformedDf = transformedDf.drop(fieldName);
+        }
+
+        
+
+        // Write optimized dataset
+        transformedDf.write().mode(SaveMode.Overwrite).parquet(outputParquetDir);
+
+        System.out.println("✅ Optimized dataset written to: " + outputParquetDir);
+        spark.stop();
+    }
+}
+
