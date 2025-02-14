@@ -1,3 +1,68 @@
+### **Performance Differences: LongType, IntegerType, and StringType in Spark with Parquet**
+
+In **Apache Spark and Parquet**, the choice of data type has a **huge impact on storage efficiency, query speed, and memory usage**. Here’s a detailed breakdown:
+
+**1️⃣ Storage Efficiency in Parquet**
+-------------------------------------
+
+**Data TypeSize per ValueCompression EfficiencyBest Encoding in Parquet**IntegerType (INT32)**4 bytesVery HighBit-Packing, Run-Length Encoding (RLE)**LongType (INT64)**8 bytesHighDelta Encoding, RLE**StringType (BYTE\_ARRAY)**Variable** (Depends on string length)**Low to MediumDictionary Encoding (if low cardinality)**
+
+### **Key Observations**
+
+✅ **IntegerType (INT32) is the most storage-efficient**.✅ **LongType (INT64) is twice the size of IntegerType** but necessary for large numbers.✅ **StringType consumes the most space** and benefits from **dictionary encoding** if there are repeated values.
+
+**2️⃣ Query Performance in Spark**
+----------------------------------
+
+**Data TypeProcessing SpeedPredicate Pushdown (Filtering)Memory Usage**IntegerType**Fastest** 🚀**Best** ✅ (Integer comparisons are efficient)**Low**LongType**Fast** ✅**Good** ✅ (But slightly slower than IntegerType)**Moderate**StringType**Slowest** 🐢**Worst** ❌ (String comparisons are costly)**High**
+
+### **Key Observations**
+
+✅ **IntegerType is the best for filtering and performance** (used in indexes).✅ **LongType is slightly slower but necessary for big numbers** (e.g., timestamps).❌ **StringType is the slowest** because:
+
+*   **String comparisons are expensive**.
+    
+*   **More memory is used for string storage**.
+    
+*   **Filtering requires full scan** unless dictionary encoding is applied.
+    
+
+**3️⃣ Best Use Cases**
+----------------------
+
+**Data TypeUse Case**IntegerType**Primary Keys, Counters, Categorical Data (if < 2B values)**LongType**Timestamps, Large Numbers (IDs, financial data)**StringType**Names, Descriptions, High Cardinality Text**
+
+**4️⃣ Real-World Recommendations for Parquet Schema Optimization**
+------------------------------------------------------------------
+
+### **🚀 Optimize Integer and Long Types**
+
+✅ **Use IntegerType instead of LongType if values fit within 32-bit range (±2B)**.✅ **Use Delta Encoding for LongType fields (e.g., timestamps)**.
+
+Plain textANTLR4BashCC#CSSCoffeeScriptCMakeDartDjangoDockerEJSErlangGitGoGraphQLGroovyHTMLJavaJavaScriptJSONJSXKotlinLaTeXLessLuaMakefileMarkdownMATLABMarkupObjective-CPerlPHPPowerShell.propertiesProtocol BuffersPythonRRubySass (Sass)Sass (Scss)SchemeSQLShellSwiftSVGTSXTypeScriptWebAssemblyYAMLXML`   javaCopyEditspark.conf().set("parquet.int96AsTimestamp", "false");  // Use INT64 for timestamps (optimized)   `
+
+### **🚀 Optimize String Columns**
+
+✅ **Use Dictionary Encoding** for categorical string fields (e.g., status, category):
+
+Plain textANTLR4BashCC#CSSCoffeeScriptCMakeDartDjangoDockerEJSErlangGitGoGraphQLGroovyHTMLJavaJavaScriptJSONJSXKotlinLaTeXLessLuaMakefileMarkdownMATLABMarkupObjective-CPerlPHPPowerShell.propertiesProtocol BuffersPythonRRubySass (Sass)Sass (Scss)SchemeSQLShellSwiftSVGTSXTypeScriptWebAssemblyYAMLXML`   javaCopyEditspark.conf().set("parquet.enable.dictionary", "true");   `
+
+✅ **Convert Strings to Categorical Integers (IntegerType with lookup table)** when possible.
+
+**5️⃣ Example: Schema Performance Comparison**
+----------------------------------------------
+
+Imagine a dataset with **1 million rows**, comparing the three types:
+
+**SchemaSize (MB)Query Time (s)**IntegerType (INT32)**15MB0.5s**LongType (INT64)**30MB0.7s**StringType (BYTE\_ARRAY)**120MB2.5s**
+
+**Conclusion:**✔️ **IntegerType is the most efficient** in both storage and query speed.✔️ **StringType has the worst performance** due to **large size** and **slow string comparisons**.
+
+**🎯 Final Takeaways**
+----------------------
+
+✅ **Use IntegerType when possible (saves storage & improves performance).**✅ **Use LongType only when numbers exceed 32-bit limits (timestamps, big IDs).**✅ **Avoid StringType unless necessary** (apply dictionary encoding for categorical data).
+
 **🔹 1. How Dictionary Encoding Works**
 ---------------------------------------
 
