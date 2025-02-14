@@ -1,3 +1,43 @@
+### **Storage Overhead for ArrayType in Parquet**
+
+1.  **Repetition & Definition Levels**:
+    
+    *   ArrayType in Parquet **requires additional metadata** for each row to track nested structures.
+        
+    *   Each element in the array **stores extra bits** (typically 1-2 bytes per element) to indicate presence (null handling) and repetition (list structure).
+        
+2.  **Flattening Impact**:
+    
+    *   When flattening, we **remove the need for repetition/definition levels**.
+        
+    *   The first element is **directly stored as a struct** (no nesting, less metadata).
+        
+    *   **Remaining elements (for 30% of rows)** are still stored in an ArrayType column, but only for necessary fields.
+        
+
+### **🔹 Estimating Storage Size Change**
+
+#### **Assumptions**
+
+FieldData TypeAvg. Elements per RowOriginal Size (per row)Optimized Size (per row)idint3214 bytes4 bytestradesArrayType**1.2 (70% of rows have 0-1 elements, 30% have multiple)(8+4) \* 1.2 + 2 bytes (metadata) = 15 bytes12 bytes** (flattened for 70% of rows)ordersArrayType2**(10+10) \* 2 + 2 bytes (metadata) = 42 bytes42 bytes** (unchanged)
+
+### **🔹 Storage Calculation for 1000 Rows**
+
+#### **Before Optimization**
+
+Plain textANTLR4BashCC#CSSCoffeeScriptCMakeDartDjangoDockerEJSErlangGitGoGraphQLGroovyHTMLJavaJavaScriptJSONJSXKotlinLaTeXLessLuaMakefileMarkdownMATLABMarkupObjective-CPerlPHPPowerShell.propertiesProtocol BuffersPythonRRubySass (Sass)Sass (Scss)SchemeSQLShellSwiftSVGTSXTypeScriptWebAssemblyYAMLXML`   pythonCopyEditTotal Storage = (id + trades + orders) * 1000                = (4 + 15 + 42) * 1000                = 61,000 bytes (61 KB)   `
+
+#### **After Optimization**
+
+Plain textANTLR4BashCC#CSSCoffeeScriptCMakeDartDjangoDockerEJSErlangGitGoGraphQLGroovyHTMLJavaJavaScriptJSONJSXKotlinLaTeXLessLuaMakefileMarkdownMATLABMarkupObjective-CPerlPHPPowerShell.propertiesProtocol BuffersPythonRRubySass (Sass)Sass (Scss)SchemeSQLShellSwiftSVGTSXTypeScriptWebAssemblyYAMLXML`   pythonCopyEditTotal Storage = (id + optimized trades + orders) * 1000                = (4 + 12 + 42) * 1000                = 58,000 bytes (58 KB)   `
+
+### **📌 Estimated Storage Savings**
+
+Plain textANTLR4BashCC#CSSCoffeeScriptCMakeDartDjangoDockerEJSErlangGitGoGraphQLGroovyHTMLJavaJavaScriptJSONJSXKotlinLaTeXLessLuaMakefileMarkdownMATLABMarkupObjective-CPerlPHPPowerShell.propertiesProtocol BuffersPythonRRubySass (Sass)Sass (Scss)SchemeSQLShellSwiftSVGTSXTypeScriptWebAssemblyYAMLXML`   matlabCopyEditSavings = (61,000 - 58,000) / 61,000 * 100          ≈ **4.9% reduction in file size**   `
+
+🎯 **Primary savings come from eliminating repetition/definition metadata in the trades array field.**🎯 **The more fields we flatten, the greater the savings!**
+
+
 ### **How Many Rows in a Row Group?**
 
 *   The number of rows per Row Group **depends on the row group size setting**.
