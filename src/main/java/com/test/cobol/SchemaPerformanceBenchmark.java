@@ -39,4 +39,54 @@ public class SchemaPerformanceBenchmark {
         // Stop SparkSession
         spark.stop();
     }
+
+    import org.apache.spark.sql.Dataset;
+import org.apache.spark.sql.Row;
+import org.apache.spark.sql.SparkSession;
+import org.apache.spark.sql.functions;
+
+public class SchemaOptimizationBenchmark {
+    public static void main(String[] args) {
+        // Initialize Spark session
+        SparkSession spark = SparkSession.builder()
+                .appName("SchemaOptimizationBenchmark")
+                .master("local[*]") // Use local mode for testing
+                .getOrCreate();
+
+        // Paths to the original and optimized Parquet files
+        String originalParquetPath = "path/to/original/parquet/file";
+        String optimizedParquetPath = "path/to/optimized/parquet/file";
+
+        // Load the original and optimized DataFrames
+        Dataset<Row> originalDf = spark.read().parquet(originalParquetPath);
+        Dataset<Row> optimizedDf = spark.read().parquet(optimizedParquetPath);
+
+        // Benchmark query on the original schema
+        long startTimeOriginal = System.currentTimeMillis();
+        Dataset<Row> originalQueryResult = originalDf.filter(
+                functions.expr("exists(person, x -> x.fst_nme like 'J%')")
+        );
+        originalQueryResult.count(); // Trigger the query execution
+        long endTimeOriginal = System.currentTimeMillis();
+        long originalQueryTime = endTimeOriginal - startTimeOriginal;
+
+        // Benchmark query on the optimized schema
+        long startTimeOptimized = System.currentTimeMillis();
+        Dataset<Row> optimizedQueryResult = optimizedDf.filter(
+                functions.col("person_first_element.fst_nme").startsWith("J")
+                        .or(functions.expr("exists(person_rest_elements, x -> x.fst_nme like 'J%')"))
+        );
+        optimizedQueryResult.count(); // Trigger the query execution
+        long endTimeOptimized = System.currentTimeMillis();
+        long optimizedQueryTime = endTimeOptimized - startTimeOptimized;
+
+        // Print benchmark results
+        System.out.println("Benchmark Results:");
+        System.out.println("Original Schema Query Time: " + originalQueryTime + " ms");
+        System.out.println("Optimized Schema Query Time: " + optimizedQueryTime + " ms");
+
+        // Stop the Spark session
+        spark.stop();
+    }
+}
 }
