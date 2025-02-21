@@ -1,5 +1,13 @@
 ### **Performance Differences: LongType, IntegerType, and StringType in Spark with Parquet**
 
+Dear Teams,
+
+Today, we celebrate an incredible milestone—[Employee's Name]’s 20th anniversary with [Company Name]! Over the years, [Employee's Name] has been a cornerstone of our IT architecture community, delivering exceptional results and embodying the core values of our company. His hard work, dedication, and integrity have made a lasting impact on every team he has been part of, and his commitment to doing what is right for the company has set a standard for us all.
+
+[Employee's Name] is not only a vital part of our organization but also a role model for collaboration, respect, and excellence. His contributions have shaped the success of countless projects, and his unwavering dedication continues to inspire everyone around him. Please join me in congratulating [Employee's Name] on this remarkable achievement and thanking him for 20 years of outstanding service.
+
+With gratitude,
+
 In **Apache Spark and Parquet**, the choice of data type has a **huge impact on storage efficiency, query speed, and memory usage**. Here’s a detailed breakdown:
 
 **1️⃣ Storage Efficiency in Parquet**
